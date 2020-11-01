@@ -40,16 +40,16 @@ table(seurat_mofa_human@meta.data$celltype)
 #same
 table(seurat_mofa_human@meta.data$broad_celltype)
 #Quality control
-seurat_PBMC <- seurat_PBMC %>%
-  .[,seurat_PBMC@meta.data$pass_accQC==TRUE & seurat_PBMC@meta.data$pass_rnaQC==TRUE]
+seurat_mofa_human <- seurat_mofa_human %>%
+  .[,seurat_mofa_human@meta.data$pass_accQC==TRUE & seurat_mofa_human@meta.data$pass_rnaQC==TRUE]
 
 #downloading position specific weight matrix
 pfm <- getMatrixSet(JASPAR2020,
                     opts = list(species = "Homo sapiens")
 )
-
-#import the metadata
-feature_metadata <- fread("ftp://ftp.ebi.ac.uk/pub/databases/mofa/10x_rna_atac_vignette/filtered_feature_bc_matrix/features.tsv.gz") %>%
+pfm
+#import the feature metadata
+feature_metadata <- fread("/media/david/Puzzles/IBP/human/cellranger/filtered_feature_bc_matrix/features.tsv.gz") %>%
   setnames(c("ens_id","gene","view","chr","start","end"))
 
 #extract rna data
@@ -58,10 +58,9 @@ feature_metadata.rna <- feature_metadata[view=="Gene Expression"]
 feature_metadata.atac <- feature_metadata[view=="Peaks"] %>% 
   .[,ens_id:=NULL] %>% setnames("gene","peak")
 #import the atac annotations
-foo <- fread("/media/david/Puzzles/IBP/PBMC/atac_peak_annotation.tsv") %>%
+foo <- fread("/media/david/Puzzles/IBP/human/cellranger/human_atac_peak_annotation.tsv") %>%
   .[,c("peak","peak_type")] %>%
   .[peak_type%in%c("distal", "promoter")]
-
 feature_metadata.atac <- feature_metadata.atac %>% 
   merge(foo,by="peak",all.x=TRUE)
 
@@ -87,34 +86,34 @@ for (i in c("distal","promoter")) {
   ) %>% as.matrix
   
   # AddChromatinAssay to the Seurat object
-  seurat_PBMC@assays[[paste0("ATAC_",i)]] <- CreateChromatinAssay(
-    seurat_PBMC@assays$ATAC@counts[peaks.granges$peak,], 
+  seurat_mofa_human@assays[[paste0("ATAC_",i)]] <- CreateChromatinAssay(
+    seurat_mofa_human@assays$ATAC@counts[peaks.granges$peak,], 
     ranges = peaks.granges,
     motifs = CreateMotifObject(motif.matrix, pfm)
   )
   
 }
-seurat_PBMC
+seurat_mofa_human
 
 #alright so normally we should have 4 assays by now, the split didn't work but i'm gonna try it with two
 #let's prepare the data by normalizing and scaling
-seurat_PBMC <- NormalizeData(seurat_PBMC, normalization.method = "LogNormalize", assay = "RNA")
-seurat_PBMC <- ScaleData(seurat_PBMC, do.center = TRUE, do.scale = FALSE)
+seurat_mofa_human <- NormalizeData(seurat_mofa_human, normalization.method = "LogNormalize", assay = "RNA")
+seurat_mofa_human <- ScaleData(seurat_mofa_human, do.center = TRUE, do.scale = FALSE)
 
-seurat_PBMC <- RunTFIDF(seurat_PBMC, assay = "ATAC")
+seurat_mofa_human <- RunTFIDF(seurat_mofa_human, assay = "ATAC")
 
 #feature selection on the seurat objects to do preselction to make creating the mofa thing easier?
-seurat_PBMC <- FindVariableFeatures(seurat_PBMC, 
+seurat_mofa_human <- FindVariableFeatures(seurat_mofa_human, 
                                selection.method = "vst", 
                                nfeatures = 5000,
                                assay = "RNA",
                                verbose = FALSE
 )
 
-seurat_PBMC <- FindTopFeatures(seurat_PBMC, assay="ATAC", min.cutoff = 2000)
+seurat_mofa_human <- FindTopFeatures(seurat_mofa_human, assay="ATAC", min.cutoff = 2000)
 
 ##Training the model woep woep!
-mofa <- create_mofa(seurat_PBMC, assays = c("RNA","ATAC"))
+mofa <- create_mofa(seurat_mofa_human, assays = c("RNA","ATAC"))
 mofa
 
 model_opts <- get_default_model_options(mofa)

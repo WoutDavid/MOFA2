@@ -30,7 +30,7 @@ seurat
 ##################
 ## Add metadata ##
 ##################
-
+##this isn't correct yet, since i don't have the correct metadata file
 metadata <- fread("/media/david/Puzzles/IBP/human/cellranger/human_per_barcode_metrics.csv") %>%
   .[,barcode:=gsub("-1","",barcode)]
 
