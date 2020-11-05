@@ -15,7 +15,7 @@ counts <- Read10X_h5("/media/david/Puzzles/IBP/human/cellranger/human_filtered_f
 ###################
 ## Create Seurat ##
 ###################
-
+rm(seurat)
 seurat <- CreateSeuratObject(
   counts = counts["Gene Expression"][[1]],
   project = "scRNA+scATAC_human",
@@ -30,38 +30,30 @@ seurat
 ##################
 ## Add metadata ##
 ##################
-##this isn't correct yet, since i don't have the correct metadata file
+
+rm(metadata)
+test <-fread("/media/david/Puzzles/IBP/human/cellranger/human_per_barcode_metrics.csv")
+dim(test)
+#read in the metadata, replace the barcordes by barcodes without the -1 in there
 metadata <- fread("/media/david/Puzzles/IBP/human/cellranger/human_per_barcode_metrics.csv") %>%
-  .[,barcode:=gsub("-1","",barcode)]
+ .[,barcode:=gsub("-1","",barcode)]
+dim(metadata)
+#filter those rows that do not have a 1 in their is_cell column
+metadata <- metadata[metadata$is_cell==1]
+dim(metadata)
+#this is code that only works if you have this specific metadata, it's not necessary.
+# dt <- data.table(barcode=colnames(seurat)) %>%
+#   merge(metadata,by="barcode", all.x=TRUE) %>%
+#   .[,c("pass_rnaQC","pass_accQC"):=FALSE] %>%
+#   .[!is.na(celltype),c("pass_rnaQC","pass_accQC"):=TRUE] %>%
+#   tibble::column_to_rownames("barcode")
 
-rename_celltypes <- c(
-  "naive CD4 T cells" = "Lymphoid",
-  "memory CD4 T cells" = "Lymphoid",
-  "naive CD8 T cells" = "Lymphoid",
-  "CD56 \\(bright\\) NK cells" = "Lymphoid",
-  "CD56 \\(dim\\) NK cells" = "Lymphoid",
-  "memory B cells" = "Lymphoid",
-  "naive B cells" = "Lymphoid",
-  "effector CD8 T cells" = "Lymphoid",
-  "MAIT T cells" = "Lymphoid",
-  "non-classical monocytes" = "Myeloid",
-  "intermediate monocytes" = "Myeloid",
-  "classical monocytes" = "Myeloid",
-  "myeloid DC" = "Myeloid",
-  "plasmacytoid DC" = "Lymphoid"
-)
-metadata$broad_celltype <- stringr::str_replace_all(metadata$celltype,rename_celltypes)
-
-dt <- data.table(barcode=colnames(seurat)) %>%
-  merge(metadata,by="barcode", all.x=TRUE) %>%
-  .[,c("pass_rnaQC","pass_accQC"):=FALSE] %>%
-  .[!is.na(celltype),c("pass_rnaQC","pass_accQC"):=TRUE] %>%
-  tibble::column_to_rownames("barcode")
 
 seurat <- AddMetaData(seurat, metadata)
-
+?AddMetaData
 head(seurat@meta.data)
-
+dim(seurat@meta.data)
+sum(is.na(seurat@meta.data$is_cell))
 ##########
 ## Save ##
 ##########
