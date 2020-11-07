@@ -1,3 +1,6 @@
+setwd("G:/IBP")
+seurat <- readRDS("seurat_human.RDS")
+mofa <- load_model ("first_model.hdf5")
 
 #Add metadata
 samples_metadata(mofa) <- seurat@meta.data %>%
@@ -12,6 +15,7 @@ plot_variance_explained(mofa, max_r2 = 4)
 plot_variance_explained(mofa, plot_total = TRUE)[[2]]
 
 #Characterization of factors
+install.packages("psych")
 ##Correlate factors & covariates
 correlate_factors_with_covariates(mofa, 
                                   covariates = c("nFeature_RNA","nFeature_ATAC")
@@ -99,10 +103,21 @@ for (i in paste0("Factor",1:3)) {
 
 ##Using only RNA-seq data
 DefaultAssay(seurat) <- "RNA"
-seurat <- RunPCA(seurat, npcs = K, verbose = FALSE)
-seurat <- RunUMAP(seurat, reduction = 'pca', dims = 1:K, verbose = FALSE)
+
+seurat_mofa_human <- FindVariableFeatures(seurat,
+                                          selection.method = "vst",
+                                          nfeatures = 5000,
+                                          assay = "RNA",
+                                          verbose = FALSE
+)
+seurat_mofa_human <- NormalizeData(seurat_mofa_human, normalization.method = "LogNormalize", assay = "RNA")
+seurat_mofa_human <- ScaleData(seurat_mofa_human, do.center = TRUE, do.scale = FALSE)
+
+
+seurat <- RunPCA(seurat_mofa_human, npcs = 50, verbose = FALSE)
+seurat <- RunUMAP(seurat, reduction = 'pca', dims = 1:50, verbose = FALSE)
 DimPlot(seurat, label = TRUE, reduction="umap") + 
-  NoLegend() + NoAxes() + scale_fill_manual(values=colors)
+  NoLegend() + NoAxes()
 
 
 ##Using only ATAC
