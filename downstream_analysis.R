@@ -1,4 +1,6 @@
-
+#importing the seurat object and the MOFA model
+seurat <- readRDS("seurat_human.RDS")
+mofa <- load_model("first_model.hdf5")
 #Add metadata
 samples_metadata(mofa) <- seurat@meta.data %>%
   tibble::rownames_to_column("sample") %>%
