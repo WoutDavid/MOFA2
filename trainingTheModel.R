@@ -145,4 +145,5 @@ model_opts$num_factors <- 15
 mofa
 mofa <- prepare_mofa(mofa,
                      model_options = model_opts)
-mofa <- run_mofa(mofa, outfile = "MOFA_model.hdf5")
+mofa <- run_mofa(mofa, outfile = "/media/david/Puzzles/IBP/human/MOFA_model.hdf5")
+saveRDS(mofa, "/media/david/Puzzles/IBP/human/mofa_object_human.RDS")
