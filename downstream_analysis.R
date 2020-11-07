@@ -1,10 +1,11 @@
-
-
 #importing the seurat object and the MOFA model
+library(Seurat)
+library(MOFA2)
 seurat <- readRDS("seurat_human.RDS")
 mofa <- load_model("first_model.hdf5")
 
 #Add metadata
+library(data.table)
 samples_metadata(mofa) <- seurat@meta.data %>%
   tibble::rownames_to_column("sample") %>%
   as.data.table
@@ -18,6 +19,7 @@ plot_variance_explained(mofa, plot_total = TRUE)[[2]]
 
 #Characterization of factors
 install.packages("psych")
+library(psych)
 ##Correlate factors & covariates
 correlate_factors_with_covariates(mofa, 
                                   covariates = c("nFeature_RNA","nFeature_ATAC")
