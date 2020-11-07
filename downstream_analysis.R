@@ -1,13 +1,9 @@
-<<<<<<< HEAD
-setwd("G:/IBP")
-seurat <- readRDS("seurat_human.RDS")
-mofa <- load_model ("first_model.hdf5")
 
-=======
+
 #importing the seurat object and the MOFA model
 seurat <- readRDS("seurat_human.RDS")
 mofa <- load_model("first_model.hdf5")
->>>>>>> 4f1f4e8980e38e073951ddc2c0af730acc4186ec
+
 #Add metadata
 samples_metadata(mofa) <- seurat@meta.data %>%
   tibble::rownames_to_column("sample") %>%
