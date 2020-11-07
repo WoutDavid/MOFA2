@@ -78,7 +78,7 @@ foo$peak
   
 feature_metadata.atac <- feature_metadata.atac %>% 
   merge(foo,by="peak",all.x=TRUE)
-
+feaute_metadata.atac
 #Split ATAC matrix depending on the peak type and create a ChromatinAssay for each modality using the Signac package.
 #This object requires a GRanges object with the peak metadata. 
 #this doesnt work yet, but it's supposed to divide the ATAC assay into a distal and a promotor atac assay
@@ -129,8 +129,12 @@ seurat_mofa_human <- FindVariableFeatures(seurat_mofa_human,
                                assay = "RNA",
                                verbose = FALSE
 )
+#this might be wrong, the vignette uses the commented out method FindTopFeatures, but that didn't select enough features out for the model to be trained
 seurat_mofa_human <- FindVariableFeatures(seurat_mofa_human, selection.method = "vst", nfeatures = 5000, assay="ATAC", verbose = FALSE)
 #seurat_mofa_human <- FindTopFeatures(seurat_mofa_human, assay="ATAC", min.cutoff = 2000)
+
+#save the seurat object before training the model, it can be an good source of extra information in the downstream analysis
+saveRDS(seurat_mofa_human, "seurat_human_before_training.RDS")
 ##Training the model woep woep!
 library(MOFA2)
 mofa <- create_mofa(seurat_mofa_human, assays = c("RNA","ATAC"))
