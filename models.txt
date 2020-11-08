@@ -1,0 +1,16 @@
+first_model:
+    -ATAC split in distal/promotor
+    -default model options
+    -5000 findVariableFeatures for all assays
+    -no motif matrix added
+
+    Model options:
+    - Automatic Relevance Determination prior on the factors: False
+    - Automatic Relevance Determination prior on the weights: True
+    - Spike-and-slab prior on the factors: False
+    - Spike-and-slab prior on the weights: True 
+
+    Likelihoods:
+    - View 0 (RNA): gaussian
+    - View 1 (ATAC_distal): gaussian
+    - View 2 (ATAC_promoter): gaussian
