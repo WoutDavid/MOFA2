@@ -29,16 +29,12 @@ seurat <- CreateSeuratObject(
 )
 seurat
 seurat@assays$RNA@counts
-rownames(seurat@assays$RNA@counts)
-colnames(seurat@assays$RNA@counts)
 dim(seurat@assays$RNA@counts)
 
 # Add ATAC modality
 seurat[["ATAC"]] <- CreateAssayObject(counts = counts["Peaks"][[1]])
 dim(seurat@assays$ATAC@counts)
 ##86394 features, 3332 cells
-rownames(seurat@assays$ATAC@counts)
-colnames(seurat@assays$ATAC@counts)
 
 ##all gene names are in caps
 ##all cells are in caps with regex: CAAGACAAGGACCTTG-1
@@ -48,21 +44,15 @@ seurat
 ## Add metadata ##
 ##################
 
-rm(metadata)
-test <-fread("/media/david/Puzzles/IBP/human/cellranger/human_per_barcode_metrics.csv")
-dim(test)
-colnames(test)
-rownames(test)
-head(test)
+
 
 #read in the metadata, replace the barcordes by barcodes without the -1 in there
 #I decided not to replace the -1. It might be less pretty and interpretable, but it makes the merging
 #of the metadata a lot easier
+rm(metadata)
 metadata <- fread("/media/david/Puzzles/IBP/human/cellranger/human_per_barcode_metrics.csv") %>%
  .[,barcode:=gsub("-1","-1",barcode)]
 dim(metadata)
-colnames(metadata)
-rownames(metadata)
 head(metadata)
 #filter those rows that do not have a 1 in their is_cell column
 metadata <- metadata[metadata$is_cell==1]
@@ -75,8 +65,6 @@ dim(metadata)
 #   .[!is.na(celltype),c("pass_rnaQC","pass_accQC"):=TRUE] %>%
 #   tibble::column_to_rownames("barcode")
 
-colnames(metadata)
-rownames(metadata)
 head(metadata[,1])
 head(seurat@meta.data)
 dt <- data.table(barcode=colnames(seurat)) %>%
