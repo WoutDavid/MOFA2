@@ -1,3 +1,8 @@
+##################################################################################################################
+## WATCH OUT: this script is reused for mouse/human seperately, so dont forget to replace all mentions of mouse ##
+## with human or vice versa, otherwise things will go wrong.                                                    ##
+##################################################################################################################
+
 library(Seurat)
 library(data.table)
 library(purrr)
