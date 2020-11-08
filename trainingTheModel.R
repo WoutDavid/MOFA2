@@ -1,5 +1,5 @@
 ##################################################################################################################
-## WATCH OUT: this script is reused for mouse/human seperately, so dont forget to replace all mentions of mouse ##
+## WATCH OUT: this script is reused for mouse/human seperately, so dont forget to replace all mentions of human ##
 ## with human or vice versa, otherwise things will go wrong.                                                    ##
 ##################################################################################################################
 #laod libraries:
@@ -39,10 +39,10 @@ library(BSgenome.Mmusculus.UCSC.mm10)
 #library(BSgenome.Hsapiens.UCSC.hg38)
 
 library(MOFA2)
-seurat_mofa_mouse <- readRDS("/media/david/Puzzles/IBP/mouse/cellranger/seurat_mouse.RDS")
-seurat_mofa_mouse
-#doesnt work because metadata wasnt added
-head(seurat_mofa_mouse@meta.data)
+seurat_mofa_human <- readRDS("/media/david/Puzzles/IBP/human/cellranger/seurat_human.RDS")
+seurat_mofa_human
+
+head(seurat_mofa_human@meta.data)
 
 #Quality control
 #todo: look at the suggestions send to us by the promotor
@@ -53,20 +53,18 @@ pfm <- getMatrixSet(JASPAR2020,
 )
 pfm
 #import the feature metadata
-feature_metadata <- fread("/media/david/Puzzles/IBP/mouse/cellranger/filtered_feature_bc_matrix/features.tsv") %>%
+feature_metadata <- fread("/media/david/Puzzles/IBP/human/cellranger/filtered_feature_bc_matrix/features.tsv") %>%
   setnames(c("ens_id","gene","view","chr","start","end"))
-feature_metadata
+
 #extract rna data
 feature_metadata.rna <- feature_metadata[view=="Gene Expression"]
-head(feature_metadata.rna)
-tail(feature_metadata.rna)
+
 
 #extract atac data
 #ens.null := null selects out that column, it just gets rid of it
 feature_metadata.atac <- feature_metadata[view=="Peaks"] %>% 
   .[,ens_id:=NULL] %>% setnames("gene","peak")
-head(feature_metadata.atac)
-tail(feature_metadata.atac)
+
 #selfmade function to fix the naming problem in geneID
 NameFix <- function(string){
   ##split the string by _
@@ -78,22 +76,16 @@ NameFix <- function(string){
 }
 
 #import the atac annotations
-foo <- fread("/media/david/Puzzles/IBP/mouse/cellranger/mouse_atac_peak_annotation.tsv") %>%
+foo <- fread("/media/david/Puzzles/IBP/human/cellranger/human_atac_peak_annotation.tsv") %>%
   .[,c("peak","peak_type")] %>%
   .[peak_type%in%c("distal", "promoter")]
-head(foo)
-tail(foo, 50)
 foo$peak <- sapply(foo$peak, NameFix)
-head(foo)
-tail(foo)
 ##PROBLEM FOUND: column names dont match, some fumpbling with the names is in order
 #should be fixed now, by using the function NameFix on the data coming from the atac_peak_annotation
 
   
 feature_metadata.atac <- feature_metadata.atac %>% 
   merge(foo,by="peak",all.x=TRUE)
-head(feature_metadata.atac)
-tail(feature_metadata.atac)
 
 #Split ATAC matrix depending on the peak type and create a ChromatinAssay for each modality using the Signac package.
 #This object requires a GRanges object with the peak metadata. 
@@ -120,39 +112,39 @@ for (i in c("distal","promoter")) {
   # ) %>% as.matrix
   
   # AddChromatinAssay to the Seurat object
-  seurat_mofa_mouse@assays[[paste0("ATAC_",i)]] <- CreateChromatinAssay(
-    seurat_mofa_mouse@assays$ATAC@counts[peaks.granges$peak,], 
+  seurat_mofa_human@assays[[paste0("ATAC_",i)]] <- CreateChromatinAssay(
+    seurat_mofa_human@assays$ATAC@counts[peaks.granges$peak,], 
     ranges = peaks.granges,
     #motifs = CreateMotifObject(motif.matrix, pfm)
   )
   
 }
-seurat_mofa_mouse
+seurat_mofa_human
 
 #alright so the 4 assays are there, but the motif matrix has not been added, so some downstream analysis will still not match
 #let's prepare the data by normalizing and scaling
-seurat_mofa_mouse <- NormalizeData(seurat_mofa_mouse, normalization.method = "LogNormalize", assay = "RNA")
-seurat_mofa_mouse <- ScaleData(seurat_mofa_mouse, do.center = TRUE, do.scale = FALSE)
+seurat_mofa_human <- NormalizeData(seurat_mofa_human, normalization.method = "LogNormalize", assay = "RNA")
+seurat_mofa_human <- ScaleData(seurat_mofa_human, do.center = TRUE, do.scale = FALSE)
 
 #normalizing the ATAC dataset
 #some features contain 0 counts cause we didn't do any quality control yet
 for (i in c("ATAC_distal","ATAC_promoter")) {
-  seurat_mofa_mouse <- RunTFIDF(seurat_mofa_mouse, assay = i)
+  seurat_mofa_human <- RunTFIDF(seurat_mofa_human, assay = i)
 }
 
 #feature selection on the seurat objects to do preselction to make creating the mofa thing easier
 #the number of features we select here is definitly relevant, this might be worth looking into
-seurat_mofa_mouse <- FindVariableFeatures(seurat_mofa_mouse, 
+seurat_mofa_human <- FindVariableFeatures(seurat_mofa_human, 
                                selection.method = "vst", 
                                nfeatures = 5000,
                                assay = "RNA",
                                verbose = FALSE
 )
 #this might be wrong, the vignette uses the commented out method FindTopFeatures, but that didn't select enough features out for the model to be trained
-#seurat_mofa_mouse <- FindVariableFeatures(seurat_mofa_mouse, selection.method = "vst", nfeatures = 5000, assay="ATAC", verbose = FALSE)
+#seurat_mofa_human <- FindVariableFeatures(seurat_mofa_human, selection.method = "vst", nfeatures = 5000, assay="ATAC", verbose = FALSE)
 for (i in c("ATAC_distal","ATAC_promoter")) {
-  seurat_mofa_mouse <- FindVariableFeatures(seurat_mofa_mouse, assay=i, nfeatures = 5000, verbose = FALSE, selection.method = "vst")
-  print(length(seurat_mofa_mouse[[i]]@var.features))
+  seurat_mofa_human <- FindVariableFeatures(seurat_mofa_human, assay=i, nfeatures = 5000, verbose = FALSE, selection.method = "vst")
+  print(length(seurat_mofa_human[[i]]@var.features))
 }
 # for (i in c("ATAC_distal","ATAC_promoter")) {
 #   seurat <- FindTopFeatures(seurat, assay=i, min.cutoff = 2000)
@@ -160,18 +152,18 @@ for (i in c("ATAC_distal","ATAC_promoter")) {
 # }
 
 #save the seurat object before training the model, it can be an good source of extra information in the downstream analysis
-saveRDS(seurat_mofa_mouse, "seurat_mouse_before_training.RDS")
-seurat_mofa_mouse
+saveRDS(seurat_mofa_human, "/media/david/Puzzles/IBP/human/seurat_human_before_training.RDS")
+seurat_mofa_human
 ##Training the model woep woep!
-mofa <- create_mofa(seurat_mofa_mouse, assays = c("RNA","ATAC_distal","ATAC_promoter"))
+mofa <- create_mofa(seurat_mofa_human, assays = c("RNA","ATAC_distal","ATAC_promoter"))
 ##again: notice here that there's only 5000 features in the ATAC seq datacause i used FindVariableFeatures, and not FindTopFeatures
 mofa
 
-
+##define the model options
 model_opts <- get_default_model_options(mofa)
 model_opts$num_factors <- 15
 mofa
 mofa <- prepare_mofa(mofa,
                      model_options = model_opts)
-mofa <- run_mofa(mofa, outfile = "/media/david/Puzzles/IBP/mouse/mouse_MOFA_model.hdf5")
-saveRDS(mofa, "/media/david/Puzzles/IBP/mouse/mofa_object_mouse.RDS")
+mofa <- run_mofa(mofa, outfile = "/media/david/Puzzles/IBP/human/human_MOFA_model.hdf5", use_basilisk=TRUE)
+saveRDS(mofa, "/media/david/Puzzles/IBP/human/mofa_object_human.RDS")
