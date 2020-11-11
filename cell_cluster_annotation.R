@@ -1,4 +1,14 @@
+#Dont judge me for this
+#https://drive.google.com/drive/folders/1cXiEQihecVUAsT2Op63_MUkJN9sAZLke
+#https://github.com/bioFAM/MOFA
+#https://satijalab.org/seurat/v3.2/pbmc3k_tutorial.html
+#https://satijalab.org/seurat/vignettes.html
+#https://github.com/WoutDavid/MOFA2/network/dependencies
+#https://raw.githack.com/bioFAM/MOFA2_tutorials/master/R_tutorials/10x_scRNA_scATAC.html
+
+
 library(Seurat)
+library(dplyr)
 
 #seurat_mofa_human <- readRDS("../seurat_human.RDS")
 pbmc<- readRDS("../seurat_human.RDS")
@@ -15,6 +25,8 @@ VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3
 
 plot1 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "percent.mt")
 plot2 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot1
+plot2
 plot1 + plot2
 
 
@@ -103,5 +115,42 @@ head(Idents(pbmc), 5)
 
 
 
+###############################################################################
+#####  Finding differentially expressed features (cluster biomarkers)   #######
+###############################################################################
 
+## THERE ARE 15 CLUSTERS IN UMAP KNN GRAPH WITH DEFAULT K
+
+# find all markers of cluster 1
+cluster1.markers <- FindMarkers(pbmc, ident.1 = 1, min.pct = 0.25) #, test.use = "roc") for DE testing
+head(cluster1.markers, n = 5)
+
+# find all markers distinguishing cluster 5 from clusters 0 and 3
+#cluster5.markers <- FindMarkers(pbmc, ident.1 = 5, ident.2 = c(0, 3), min.pct = 0.25)
+#head(cluster5.markers, n = 5)
+
+
+for(i in 0:14) {
+  variable_name = paste("markers.cluster", i, sep = "")
+  assign(variable_name, FindMarkers(pbmc, ident.1 = i, min.pct = 0.25))
+  print(paste("Head of biomarkers for cluster", i, sep=" "))
+  print(head(eval(as.name(variable_name)), n = 5))
+}
+
+# Results stored in markers.cluster0, markers.cluster1 ... markers.cluster14
+
+
+# find markers for every cluster compared to all remaining cells, report only the positive ones
+pbmc.markers <- FindAllMarkers(pbmc, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+pbmc.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_logFC) #wt -> the variable to use for ordering results
+
+# Visualize features for cluster 4 (for example)
+VlnPlot(pbmc, features = c("SLC1A2", "GPC5"))
+
+FeaturePlot(pbmc, features = c("PLP1", "CRYAB", "POLR2F", "SH3TC2-DT"))#"LINC01608", "NLGN1",reduction="umap"))# 
+                               #"PDE1A", "SLC5A11", "SLC1A2", "GPC5"), reduction="umap")
+# Uncomment above to generate the plot with more features (but it is very big)
+
+top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+DoHeatmap(pbmc, features = top10$gene) + NoLegend()
 
