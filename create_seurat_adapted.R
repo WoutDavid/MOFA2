@@ -7,8 +7,6 @@ library(Seurat)
 library(data.table)
 library(purrr)
 library(rhdf5)
-basedir <- "/media/david/Puzzles/IBP/human/cellranger/filtered_feature_bc_matrix/"
-outfile <- "/media/david/Puzzles/IBP/human/cellranger/seurat_human.RDS"
 
 
 ###############
@@ -25,26 +23,22 @@ rm(seurat)
 seurat <- CreateSeuratObject(
   counts = counts["Gene Expression"][[1]],
   project = "scRNA+scATAC_human",
-  min.cells = 1
+  min.cells = 1,
 )
 seurat
-seurat@assays$RNA@counts
 dim(seurat@assays$RNA@counts)
 
 # Add ATAC modality
 seurat[["ATAC"]] <- CreateAssayObject(counts = counts["Peaks"][[1]])
 dim(seurat@assays$ATAC@counts)
 ##86394 features, 3332 cells
-
-##all gene names are in caps
-##all cells are in caps with regex: CAAGACAAGGACCTTG-1
 seurat
-#rows are cells
+
+
+
 ##################
 ## Add metadata ##
 ##################
-
-
 
 #read in the metadata, replace the barcordes by barcodes without the -1 in there
 #I decided not to replace the -1. It might be less pretty and interpretable, but it makes the merging
@@ -65,8 +59,6 @@ dim(metadata)
 #   .[!is.na(celltype),c("pass_rnaQC","pass_accQC"):=TRUE] %>%
 #   tibble::column_to_rownames("barcode")
 
-head(metadata[,1])
-head(seurat@meta.data)
 dt <- data.table(barcode=colnames(seurat)) %>%
   merge(metadata,by="barcode", all.x=TRUE) %>%
   tibble::column_to_rownames("barcode")
@@ -75,7 +67,17 @@ seurat <- AddMetaData(seurat, dt)
 head(seurat@meta.data)
 dim(seurat@meta.data)
 
+
+###############################################################
+## Quality control for mitochondrial genes and nfeatures_RNA ##
+###############################################################
+seurat[["percent.mt"]] <- PercentageFeatureSet(seurat, pattern = "^MT-")
+VlnPlot(seurat, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+##10 is not yet a very strict threshold for mitochondrial percentage, neither is 13000 feature_rna
+seurat <- subset(seurat, subset = nFeature_RNA < 13000 & percent.mt < 10)
+
+#
 ##########
 ## Save ##
 ##########
-saveRDS(seurat, outfile, compress = FALSE)
+saveRDS(seurat, "second_create_seurat.RDS", compress = FALSE)
