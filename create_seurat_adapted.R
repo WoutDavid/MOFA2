@@ -28,7 +28,8 @@ seurat <- CreateSeuratObject(
 seurat
 dim(seurat@assays$RNA@counts)
 
-# Add ATAC modality
+# Add ATAC modality, beware that this is still an AssayObject, not a chromatinAssay object
+#this Assay Object is going to get transformed into two different chromatinAssay objects later on, in TrainingTheModel
 seurat[["ATAC"]] <- CreateAssayObject(counts = counts["Peaks"][[1]])
 dim(seurat@assays$ATAC@counts)
 ##86394 features, 3332 cells
@@ -76,7 +77,6 @@ VlnPlot(seurat, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol =
 ##10 is not yet a very strict threshold for mitochondrial percentage, neither is 13000 feature_rna
 seurat <- subset(seurat, subset = nFeature_RNA < 13000 & percent.mt < 10)
 
-#
 ##########
 ## Save ##
 ##########
