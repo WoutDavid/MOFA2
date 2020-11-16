@@ -154,3 +154,24 @@ FeaturePlot(pbmc, features = c("PLP1", "CRYAB", "POLR2F", "SH3TC2-DT"))#"LINC016
 top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
 DoHeatmap(pbmc, features = top10$gene) + NoLegend()
 
+# We found 15 clusters, from 0 to 14, in the data. All the marker genes are stored under
+# the markers.clusterX variable, where X is the cluster number. But for simplicity we list here the top3
+# marker genes found in each cluster:
+#   print(pbmc.markers %>% group_by(cluster) %>% top_n(n = 3, wt = avg_logFC), n=45)
+#   Cluster 0: DBNDD2     PLP1      CRYAB
+#   Cluster 1: POLR2F     SEC14L5   SH3TC2-DT 
+#   Cluster 2: LINC01608  NLGN1     AC012494.1
+#   Cluster 3: PDE1A      SLC5A11   LINC00609    
+#   Cluster 4: LINC00499  SLC1A2    GPC5      
+#   Cluster 5: PLP1       MAN2A1    LANCL1    
+#   Cluster 6: DBNDD2     CRYAB     PLP1      
+#   Cluster 7: MT-ND4     MT-CO2    MT-ND1    
+#   Cluster 8: CD83       ST6GAL1   LRMDA     
+#   Cluster 9: ATP1B3     DPP10     AKAP12    
+#   Cluster 10: CST3      SLC1A2    GPC5      
+#   Cluster 11: ROBO2     GRIK1     RBFOX1    
+#   Cluster 12: TFRC      CLU       PDK4      
+#   Cluster 13: GALNTL6   CNTN5     CSMD1     
+#   Cluster 14: LUZP2     PCDH15    LHFPL3    
+  
+
