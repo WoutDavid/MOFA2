@@ -14,3 +14,13 @@ first_model:
     - View 0 (RNA): gaussian
     - View 1 (ATAC_distal): gaussian
     - View 2 (ATAC_promoter): gaussian
+
+second_model:
+    - Motif enrichment added
+    - default model options
+    - 5000 findVariableFeatures for both RNA
+    - 1000 min.cutoff for ATAC seq, cause 600 left too many features, mofa asked
+      to perform more stringent cutoff
+    - quality control added
+    model options and likelihoods: 
+    - same as first
