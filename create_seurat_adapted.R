@@ -1,6 +1,6 @@
 ##################################################################################################################
-## WATCH OUT: this script is reused for mouse/human seperately, so dont forget to replace all mentions of mouse ##
-## with mouse or vice versa, otherwise things will go wrong.                                                    ##
+## WATCH OUT: this script is reused for mouse/human seperately, so dont forget to replace all mentions of human ##
+## with human or vice versa, otherwise things will go wrong.                                                    ##
 ##################################################################################################################
 
 library(Seurat)
@@ -13,8 +13,8 @@ library(rhdf5)
 ## Load data ##
 ###############
 rm(counts)
-counts <- Read10X_h5("/media/david/Puzzles/IBP/mouse/cellranger/mouse_filtered_feature_bc_matrix.h5")
-#counts <- Read10X(paste0(basedir,"/e18_mouse_brain_fresh_5k_raw_feature_bc_matrix.h5"))
+counts <- Read10X_h5("/media/david/Puzzles/IBP/human/cellranger/human_filtered_feature_bc_matrix.h5")
+#counts <- Read10X(paste0(basedir,"/e18_human_brain_fresh_5k_raw_feature_bc_matrix.h5"))
 
 ###################
 ## Create Seurat ##
@@ -22,7 +22,7 @@ counts <- Read10X_h5("/media/david/Puzzles/IBP/mouse/cellranger/mouse_filtered_f
 rm(seurat)
 seurat <- CreateSeuratObject(
   counts = counts["Gene Expression"][[1]],
-  project = "scRNA+scATAC_mouse",
+  project = "scRNA+scATAC_human",
   min.cells = 1,
 )
 seurat
@@ -32,7 +32,6 @@ dim(seurat@assays$RNA@counts)
 #this Assay Object is going to get transformed into two different chromatinAssay objects later on, in TrainingTheModel
 seurat[["ATAC"]] <- CreateAssayObject(counts = counts["Peaks"][[1]])
 dim(seurat@assays$ATAC@counts)
-##86394 features, 3332 cells
 seurat
 
 
@@ -45,7 +44,7 @@ seurat
 #I decided not to replace the -1. It might be less pretty and interpretable, but it makes the merging
 #of the metadata a lot easier
 rm(metadata)
-metadata <- fread("/media/david/Puzzles/IBP/mouse/cellranger/mouse_per_barcode_metrics.csv") %>%
+metadata <- fread("/media/david/Puzzles/IBP/human/cellranger/human_per_barcode_metrics.csv") %>%
  .[,barcode:=gsub("-1","-1",barcode)]
 dim(metadata)
 head(metadata)
@@ -73,10 +72,10 @@ dim(seurat@meta.data)
 ## Quality control for mitochondrial genes and nfeatures_RNA ##
 ###############################################################
 ##watch out, the pattern for mice mitochondrial dna is lowercase mt, not uppercase
-seurat[["percent.mt"]] <- PercentageFeatureSet(seurat, pattern = "^mt-")
+seurat[["percent.mt"]] <- PercentageFeatureSet(seurat, pattern = "^MT-")
 VlnPlot(seurat, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
 ##10 is not yet a very strict threshold for mitochondrial percentage, neither is 13000 feature_rna
-seurat <- subset(seurat, subset = nFeature_RNA < 9000 & percent.mt < 15)
+seurat <- subset(seurat, subset = nFeature_RNA < 12000 & percent.mt < 15)
 seurat
 ##########
 ## Save ##

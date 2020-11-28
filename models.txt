@@ -18,6 +18,8 @@ first_model:
 second_model:
     - Motif enrichment added
     - default model options
+    - QC: mouse : subset = nFeature_RNA < 9000 & percent.mt < 15)
+          human : subset(seurat, subset = nFeature_RNA < 12000 & percent.mt < 15)
     - 5000 findVariableFeatures for both RNA
     - 1000 min.cutoff for ATAC seq, cause 600 left too many features, mofa asked
       to perform more stringent cutoff
