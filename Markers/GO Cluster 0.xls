@@ -1,0 +1,2 @@
+GO Term	Description	P-value	FDR q-value	Enrichment	N	B	n	b	Genes
+GO:0072527	pyrimidine-containing compound metabolic process	3.09E-4	1E0	17.46	803	3	46	3	[AK5  -  adenylate kinase 5, AGPAT4  -  1-acylglycerol-3-phosphate o-acyltransferase 4, DPYD  -  dihydropyrimidine dehydrogenase]

@@ -173,5 +173,68 @@ DoHeatmap(pbmc, features = top10$gene) + NoLegend()
 #   Cluster 12: TFRC      CLU       PDK4      
 #   Cluster 13: GALNTL6   CNTN5     CSMD1     
 #   Cluster 14: LUZP2     PCDH15    LHFPL3    
+
+# Cluster 7 is enriched with mitochondrial genes, showing (very likely) low quality cells
+# for that, this cluster will be dropped from the analysis
+# Also, clusters 4 and 9; 10 and 12 have a very similar expression pattern. This make us think
+# that we found too many clusters and we should lower the resolution parameter
+
+# Re cluster data
+
+pbmc <- FindNeighbors(pbmc, reduction="umap" ,dims = 1:2) #k.param = 30
+pbmc <- FindClusters(pbmc, resolution = 0.03) #??? 0.025 works kinda fine
+
+pbmc.markers <- FindAllMarkers(pbmc, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+pbmc.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_logFC)
+
+top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+DoHeatmap(pbmc, features = top10$gene) + NoLegend()
+
+# Write all markers
+
+write.table(x=pbmc.markers, file = "Markers/Human Markers.csv", quote = F, row.names = F, col.names = T, sep = ",")
+
+# Write markers per cluster in ascending and descending order for Gorilla Analysis
+
+for (i in 0:6){
+  markers_subset = subset(pbmc.markers, cluster==i)
   
+  ascending = markers_subset[order(markers_subset$avg_logFC, decreasing = FALSE),]
+  write.table(x=ascending$gene, file = paste("Markers/markers_cluster", i, "_ascending.txt", sep=""), 
+              sep = ",", quote = F, col.names = F, row.names = F)
+  
+  descending = markers_subset[order(markers_subset$avg_logFC, decreasing = TRUE),]
+  write.table(x=descending$gene, file = paste("Markers/markers_cluster", i, "_descending.txt", sep=""), 
+              sep = ",", quote = F, col.names = F, row.names = F)
+}
+
+# Cell annotation
+# https://github.com/ZJUFanLab/scCATCH
+#library(devtools)
+#devtools::install_github('ZJUFanLab/scCATCH')
+library(scCATCH)
+
+clu_markers <- findmarkergenes(pbmc, species = "Human", cluster = 'All', match_CellMatch = FALSE, cancer = NULL,
+                               tissue = NULL, cell_min_pct = 0.25, logfc = 0.25, pvalue = 0.05)
+
+clu_ann <- scCATCH(clu_markers$clu_markers, species = "Human", cancer = NULL, tissue = "Brain")
+write.table(x=clu_ann,  file = "Cell Type Annotation per Cluster.tsv", row.names = F, 
+            col.names = T, sep = "\t", quote = F)
+
+saveRDS(clu_markers, file="scCATCH Cluster Markers.Rds")
+saveRDS(clu_ann, file = "scCATCH Cluster Annotation.Rds")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
