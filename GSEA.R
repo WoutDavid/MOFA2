@@ -35,7 +35,10 @@ data("MSigDB_v6.0_C5_human")
 # identifiers <- colnames(MSigDB_v6.0_C5_human)
 # lapply(identifiers, write, "test.txt", append=TRUE)
 
-## the result of the python code is Gene_names.txt, we have to integrate that back into the matrix:
+## the result of the python code is Gene_names.txt, which is too large to put in the github, so you'll have to download
+#it from google drive. I'll put it in the second_model directory.
+
+#We have to integrate that back into the matrix:
 gene_names <-  read.table("Gene_names.txt", sep="\t")
 ##note that there are empty entries in there, not all features are recognised but that shouldn't be a problem
 vector <- gene_names$V2
