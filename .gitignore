@@ -1,5 +1,6 @@
 .Rproj.user
 multigroup_create_seurat.R
+gene_names.txt
 .Rhistory
 .RData
 .Ruserdata
