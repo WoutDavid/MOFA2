@@ -211,8 +211,82 @@ genes %>% map(~ plot_factors(mofa_mouse,
 
 
 
+##############
+#GSEA human ##
+##############
 
+data("MSigDB_v6.0_C5_human")
 
+#following is commented out because it requires manual steps that I already performed, you can continue to the part where
+##you read in the gene_names
+# identifiers <- colnames(MSigDB_v6.0_C5_human)
+# lapply(identifiers, write, "test.txt", append=TRUE)
 
+## the result of the python code is Gene_names.txt, which is too large to put in the github, so you'll have to download
+#it from google drive. I'll put it in the second_model directory.
 
+#We have to integrate that back into the matrix:
+gene_names <-  read.table("Gene_names.txt", sep="\t")
+##note that there are empty entries in there, not all features are recognised but that shouldn't be a problem
+vector <- gene_names$V2
+colnames(MSigDB_v6.0_C5_human) <- vector
+
+##To match the gene names,wwe have to capitalize the features
+features_names(mofa_human)[["RNA"]] <- toupper(features_names(mofa_human)[["RNA"]])
+features_names(mofa_human)[["RNA"]]
+gsea.positive <- run_enrichment(mofa_human, 
+                                feature.sets = MSigDB_v6.0_C5_human, 
+                                view = "RNA",
+                                sign = "positive"
+)
+# GSEA on negative weights
+gsea.negative <- run_enrichment(mofa_human, 
+                                feature.sets = MSigDB_v6.0_C5_human, 
+                                view = "RNA",
+                                sign = "negative"
+)
+names(gsea.positive)
+
+##visualisation
+##POSITIVE
+#check if all factors have some enriched pathways:
+plot_enrichment_heatmap(gsea.positive)
+
+plot_enrichment(gsea.positive, factor = 1, max.pathways = 15)
+
+plot_enrichment_detailed(gsea.positive,
+                         factor = 1,
+                         max.genes = 10,
+                         max.pathways = 5
+)
+
+##we see some interesting genes, that you can fill in this list and then visualise their GSEA specifically:
+genes <- list("x","x")
+
+genes %>% map(~ plot_factors(mofa_human, 
+                             factors = c(1,2), 
+                             color_by = ., 
+                             scale = T,
+                             legend = F
+)) %>% cowplot::plot_grid(plotlist=., nrow=1)
+
+##NEGATIVE
+plot_enrichment_heatmap(gsea.negative)
+
+plot_enrichment(gsea.negative, factor = 1, max.pathways = 15)
+
+plot_enrichment_detailed(gsea.negative,
+                         factor = 1,
+                         max.genes = 10,
+                         max.pathways = 5
+)
+##we see some interesting genes again in the negtive
+genes <- list("x","x")
+
+genes %>% map(~ plot_factors(mofa_human, 
+                             factors = c(1,2), 
+                             color_by = ., 
+                             scale = T,
+                             legend = F
+)) %>% cowplot::plot_grid(plotlist=., nrow=1)
 
