@@ -133,7 +133,81 @@ DimPlot(seurat, label = TRUE, reduction="umap") +
 
 
 
+##############
+#GSEA mouse ##
+##############
 
+##install packages for the Gene sets
+library(msigdbr)
+library(cowplot)
+#BiocManager::install("MOFAdata")
+library(MOFAdata)
+
+##load data
+data("MSigDB_v6.0_C5_mouse")
+head(colnames(MSigDB_v6.0_C5_mouse))
+
+
+############## dont forget to change to the correct feature set
+
+##To match the gene names,wwe have to capitalize the features
+features_names(mofa_mouse)[["RNA"]] <- toupper(features_names(mofa_mouse)[["RNA"]])
+features_names(mofa_mouse)[["RNA"]]
+gsea.positive <- run_enrichment(mofa_mouse, 
+                                feature.sets = MSigDB_v6.0_C5_mouse, 
+                                view = "RNA",
+                                sign = "positive"
+)
+# GSEA on negative weights
+gsea.negative <- run_enrichment(mofa_mouse, 
+                                feature.sets = MSigDB_v6.0_C5_mouse, 
+                                view = "RNA",
+                                sign = "negative"
+)
+names(gsea.positive)
+
+##visualisation
+##POSITIVE
+#check if all factors have some enriched pathways:
+plot_enrichment_heatmap(gsea.positive)
+
+plot_enrichment(gsea.positive, factor = 1, max.pathways = 15)
+
+plot_enrichment_detailed(gsea.positive,
+                         factor = 1,
+                         max.genes = 10,
+                         max.pathways = 5
+)
+
+##we see some interesting genes, that you can fill in this list and then visualise their GSEA specifically:
+genes <- list("x","x")
+
+genes %>% map(~ plot_factors(mofa_mouse, 
+                             factors = c(1,2), 
+                             color_by = ., 
+                             scale = T,
+                             legend = F
+)) %>% cowplot::plot_grid(plotlist=., nrow=1)
+
+##NEGATIVE
+plot_enrichment_heatmap(gsea.negative)
+
+plot_enrichment(gsea.negative, factor = 1, max.pathways = 15)
+
+plot_enrichment_detailed(gsea.negative,
+                         factor = 1,
+                         max.genes = 10,
+                         max.pathways = 5
+)
+##we see some interesting genes again in the negtive
+genes <- list("x","x")
+
+genes %>% map(~ plot_factors(mofa_mouse, 
+                             factors = c(1,2), 
+                             color_by = ., 
+                             scale = T,
+                             legend = F
+)) %>% cowplot::plot_grid(plotlist=., nrow=1)
 
 
 
