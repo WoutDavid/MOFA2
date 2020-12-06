@@ -1,6 +1,6 @@
 ##################################################################################################################
-## WATCH OUT: this script is reused for mouse/human seperately, so dont forget to replace all mentions of human ##
-## with human or vice versa, otherwise things will go wrong.                                                    ##
+## WATCH OUT: this script is reused for mouse/human seperately, so dont forget to replace all mentions of mouse ##
+## with mouse or vice versa, otherwise things will go wrong.                                                    ##
 ##################################################################################################################
 
 library(Seurat)
@@ -13,8 +13,8 @@ library(rhdf5)
 ## Load data ##
 ###############
 rm(counts)
-counts <- Read10X_h5("/media/david/Puzzles/IBP/human/cellranger/human_filtered_feature_bc_matrix.h5")
-#counts <- Read10X(paste0(basedir,"/e18_human_brain_fresh_5k_raw_feature_bc_matrix.h5"))
+counts <- Read10X_h5("/media/david/Puzzles/IBP/mouse/cellranger/mouse_filtered_feature_bc_matrix.h5")
+#counts <- Read10X(paste0(basedir,"/e18_mouse_brain_fresh_5k_raw_feature_bc_matrix.h5"))
 
 ###################
 ## Create Seurat ##
@@ -22,7 +22,7 @@ counts <- Read10X_h5("/media/david/Puzzles/IBP/human/cellranger/human_filtered_f
 rm(seurat)
 seurat <- CreateSeuratObject(
   counts = counts["Gene Expression"][[1]],
-  project = "scRNA+scATAC_human",
+  project = "scRNA+scATAC_mouse",
   min.cells = 1,
 )
 seurat
@@ -44,20 +44,13 @@ seurat
 #I decided not to replace the -1. It might be less pretty and interpretable, but it makes the merging
 #of the metadata a lot easier
 rm(metadata)
-metadata <- fread("/media/david/Puzzles/IBP/human/cellranger/human_per_barcode_metrics.csv") %>%
+metadata <- fread("/media/david/Puzzles/IBP/mouse/cellranger/mouse_per_barcode_metrics.csv") %>%
  .[,barcode:=gsub("-1","-1",barcode)]
 dim(metadata)
 head(metadata)
 #filter those rows that do not have a 1 in their is_cell column
 metadata <- metadata[metadata$is_cell==1]
 dim(metadata)
-
-#this is code that only works if you have this specific metadata, it's not necessary.
-# dt <- data.table(barcode=colnames(seurat)) %>%
-#   merge(metadata,by="barcode", all.x=TRUE) %>%
-#   .[,c("pass_rnaQC","pass_accQC"):=FALSE] %>%
-#   .[!is.na(celltype),c("pass_rnaQC","pass_accQC"):=TRUE] %>%
-#   tibble::column_to_rownames("barcode")
 
 dt <- data.table(barcode=colnames(seurat)) %>%
   merge(metadata,by="barcode", all.x=TRUE) %>%
@@ -72,12 +65,13 @@ dim(seurat@meta.data)
 ## Quality control for mitochondrial genes and nfeatures_RNA ##
 ###############################################################
 ##watch out, the pattern for mice mitochondrial dna is lowercase mt, not uppercase
-seurat[["percent.mt"]] <- PercentageFeatureSet(seurat, pattern = "^MT-")
-VlnPlot(seurat, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
-##10 is not yet a very strict threshold for mitochondrial percentage, neither is 13000 feature_rna
-seurat <- subset(seurat, subset = nFeature_RNA < 12000 & percent.mt < 15)
-seurat
+
+seurat[["percent.mt"]] <- PercentageFeatureSet(seurat, pattern = "^mt-")
+VlnPlot(seurat, features = c("nFeature_RNA", "nFeature_ATAC", "percent.mt"), ncol = 3)
+##for huma we choose: subset = nFeature_RNA < 10000 & percent.mt < 5 & nFeature_ATAC < 40000
+#for mice we choos: subset(seurat, subset = nFeature_RNA < 7000 & percent.mt < 10 & nFeature_ATAC < 25000)
+seurat <- subset(seurat, subset = nFeature_RNA < 7000 & percent.mt < 10 & nFeature_ATAC < 25000)
 ##########
 ## Save ##
 ##########
-saveRDS(seurat, "second_create_seurat.RDS", compress = FALSE)
+saveRDS(seurat, "/media/david/Puzzles/IBP/mouse/third_model_mouse/third_create_seurat_mouse.RDS", compress = FALSE)
