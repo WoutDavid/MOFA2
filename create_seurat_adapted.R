@@ -1,6 +1,6 @@
 ##################################################################################################################
 ## WATCH OUT: this script is reused for mouse/human seperately, so dont forget to replace all mentions of mouse ##
-## with mouse or vice versa, otherwise things will go wrong.                                                    ##
+## with human or vice versa, otherwise things will go wrong.                                                    ##
 ##################################################################################################################
 
 library(Seurat)
@@ -25,16 +25,10 @@ seurat <- CreateSeuratObject(
   project = "scRNA+scATAC_mouse",
   min.cells = 1,
 )
-seurat
-dim(seurat@assays$RNA@counts)
 
 # Add ATAC modality, beware that this is still an AssayObject, not a chromatinAssay object
 #this Assay Object is going to get transformed into two different chromatinAssay objects later on, in TrainingTheModel
 seurat[["ATAC"]] <- CreateAssayObject(counts = counts["Peaks"][[1]])
-dim(seurat@assays$ATAC@counts)
-seurat
-
-
 
 ##################
 ## Add metadata ##
@@ -46,32 +40,30 @@ seurat
 rm(metadata)
 metadata <- fread("/media/david/Puzzles/IBP/mouse/cellranger/mouse_per_barcode_metrics.csv") %>%
  .[,barcode:=gsub("-1","-1",barcode)]
-dim(metadata)
-head(metadata)
+
 #filter those rows that do not have a 1 in their is_cell column
 metadata <- metadata[metadata$is_cell==1]
-dim(metadata)
 
 dt <- data.table(barcode=colnames(seurat)) %>%
   merge(metadata,by="barcode", all.x=TRUE) %>%
   tibble::column_to_rownames("barcode")
-dt
-seurat <- AddMetaData(seurat, dt)
-head(seurat@meta.data)
-dim(seurat@meta.data)
 
+##add metadata
+seurat <- AddMetaData(seurat, dt)
 
 ###############################################################
 ## Quality control for mitochondrial genes and nfeatures_RNA ##
 ###############################################################
-##watch out, the pattern for mice mitochondrial dna is lowercase mt, not uppercase
-
+##watch out, the pattern for mice mitochondrial dna is lowercase mt, not uppercase, so this needs to be changed per dataset
 seurat[["percent.mt"]] <- PercentageFeatureSet(seurat, pattern = "^mt-")
 VlnPlot(seurat, features = c("nFeature_RNA", "nFeature_ATAC", "percent.mt"), ncol = 3)
 ##for huma we choose: subset = nFeature_RNA < 10000 & percent.mt < 5 & nFeature_ATAC < 40000
 #for mice we choos: subset(seurat, subset = nFeature_RNA < 7000 & percent.mt < 10 & nFeature_ATAC < 25000)
 seurat <- subset(seurat, subset = nFeature_RNA < 7000 & percent.mt < 10 & nFeature_ATAC < 25000)
+
+
 ##########
 ## Save ##
 ##########
+#optional ofcourse, takes some storage
 saveRDS(seurat, "/media/david/Puzzles/IBP/mouse/third_model_mouse/third_create_seurat_mouse.RDS", compress = FALSE)
