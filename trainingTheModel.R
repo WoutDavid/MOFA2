@@ -2,14 +2,16 @@
 ## WATCH OUT: this script is reused for human/mouse seperately, so dont forget to replace all mentions of human ##
 ## with human or vice versa, otherwise things will go wrong.                                                    ##
 ##################################################################################################################
-#laod libraries:
+
+#load and install all libraries:
 library(data.table)
 library(ggplot2)
 library(Seurat)
+
 #this makes it so that R is allowed to look on bioconducter to install packages
 #it's allowing a lot more, but it almost makes sure your package gets installed
 setRepositories(ind=1:2)
-#didn't work, creator of Signac says you can also just install this:
+#didn't work, creator of Signac says you can also just install this manually:
 # BiocManager::install(c(
 #   'AnnotationFilter',
 #   'BiocGenerics',
@@ -24,25 +26,25 @@ setRepositories(ind=1:2)
 #   'motifmatchr',
 #   'AnnotationDbi')
 # )
-#yup that worked, thank god
+#yup that worked
 
 library(Signac)
-
 library(msigdbr)
 library(BiocManager)
 #BiocManager::install("JASPAR2020")
 library(JASPAR2020)
 library(TFBSTools)
-BiocManager::install("BSgenome.Hsapiens.UCSC.hg38")
+#BiocManager::install("BSgenome.Hsapiens.UCSC.hg38")
 #BiocManager::install("BSgenome.Mmusculus.UCSC.mm10")
+
+##choose the correct one for the correct organism:
 #library(BSgenome.Mmusculus.UCSC.mm10)
 library(BSgenome.Hsapiens.UCSC.hg38)
-
 library(MOFA2)
+
+#load data
 seurat_mofa_human <- readRDS("/media/david/Puzzles/IBP/human/cellranger/seurat_human.RDS")
 seurat_mofa_human
-
-head(seurat_mofa_human@meta.data)
 
 #downloading position specific weight matrix
 #################################################################################################################################
@@ -51,20 +53,20 @@ head(seurat_mofa_human@meta.data)
 pfm <- getMatrixSet(JASPAR2020,
                     opts = list(species = "Homo sapiens")
 )
-pfm
+
 #import the feature metadata
 feature_metadata <- fread("/media/david/Puzzles/IBP/human/cellranger/filtered_feature_bc_matrix/features.tsv") %>%
   setnames(c("ens_id","gene","view","chr","start","end"))
 
-#extract rna data
+#extract rna metadatadata
 feature_metadata.rna <- feature_metadata[view=="Gene Expression"]
 
-#extract atac data
+#extract atac metadatadata
 #ens.null := null selects out that column, it just gets rid of it
 feature_metadata.atac <- feature_metadata[view=="Peaks"] %>% 
   .[,ens_id:=NULL] %>% setnames("gene","peak")
 
-#selfmade function to fix the naming problem in geneID
+#function to fix the naming problem in geneID
 NameFix <- function(string){
   ##split the string by _
   words =strsplit(string, "_")[[1]]
@@ -78,9 +80,8 @@ NameFix <- function(string){
 foo <- fread("/media/david/Puzzles/IBP/human/cellranger/human_atac_peak_annotation.tsv") %>%
   .[,c("peak","peak_type")] %>%
   .[peak_type%in%c("distal", "promoter")]
+##namefix is applied to the peak names of this document, because they don't match the original data, which makes merging impossible
 foo$peak <- sapply(foo$peak, NameFix)
-##PROBLEM FOUND: column names dont match, some fumpbling with the names is in order
-#should be fixed now, by using the function NameFix on the data coming from the atac_peak_annotation
 
   
 feature_metadata.atac <- feature_metadata.atac %>% 
@@ -88,16 +89,13 @@ feature_metadata.atac <- feature_metadata.atac %>%
 
 #Split ATAC matrix depending on the peak type and create a ChromatinAssay for each modality using the Signac package.
 #This object requires a GRanges object with the peak metadata. 
-#this doesn't work yet, but it's supposed to divide the ATAC assay into a distal and a promoter atac assay
-#problem is those last few x lines in the data that contain these sequence: "GL000194.1"
-#We might wanna decide to just let them be --> update: we decided to remove them, see lines below
 #BiocManager::install("GenomicRanges")
 #BiocManager::install("motifmatchr")
 library(motifmatchr)
 library(GenomicRanges)
-#remove all peaks that are not on a chromosome
+#first remove all peaks that are not on a chromosome
 feature_metadata.atac <- feature_metadata.atac[startsWith(feature_metadata.atac$chr, "chr")==TRUE,]
-feature_metadata.atac
+#create ChromatinAssays
 for (i in c("distal","promoter")) {
   # Create GRanges
   peaks.granges <- feature_metadata.atac %>%
@@ -121,53 +119,45 @@ for (i in c("distal","promoter")) {
   )
   
 }
-seurat_mofa_human
 
-#let's prepare the data by normalizing and scaling
+#normalizing and scaling
 seurat_mofa_human <- NormalizeData(seurat_mofa_human, normalization.method = "LogNormalize", assay = "RNA")
 seurat_mofa_human <- ScaleData(seurat_mofa_human, do.center = TRUE, do.scale = FALSE)
-
                                                                                                                                                                                                                                                                                                                                                         #normalizing the ATAC dataset
-#some features contain 0 counts cause we didn't do any quality control yet
-##interesting thing here: we don't scale out anything here yet, so in case any weird stuff with ATAQ shows up
 ##we might want to try and regress out nFeature_ATAQ
 for (i in c("ATAC_distal","ATAC_promoter")) {
   seurat_mofa_human <- RunTFIDF(seurat_mofa_human, assay = i)
 }
 
-#feature selection on the seurat objects to do preselction to make creating the mofa thing easier
-#the number of features we select here is definitly relevant, this might be worth looking into
+#feature selection on the seurat objects to do preselection to make creating the mofa object easier
+#the number of features we select here is definitely relevant, this might be worth looking into
 seurat_mofa_human <- FindVariableFeatures(seurat_mofa_human, 
                                selection.method = "vst", 
                                nfeatures = 5000,
                                assay = "RNA",
                                verbose = FALSE
 )
-#this might be wrong, the vignette uses the commented out method FindTopFeatures, but that didn't select enough features out for the model to be trained
-#seurat_mofa_human <- FindVariableFeatures(seurat_mofa_human, selection.method = "vst", nfeatures = 5000, assay="ATAC", verbose = FALSE)
-##tried this again (second model) and this time with min.cutoff 600, which is 1/5th of the cell population, it's the same ratio as in the vignette
+
+##FindtopFeatures with min.cutoff 1/5th of the cell population, it's the same ratio as in the vignette
+##you ofcourse have to adapt this to the different datasets.
 for (i in c("ATAC_distal","ATAC_promoter")) {
   seurat_mofa_human <- FindTopFeatures(seurat_mofa_human,min.cutoff = 1000, assay=i, verbose = FALSE)
   print(length(seurat_mofa_human[[i]]@var.features))
 }
-# for (i in c("ATAC_distal","ATAC_promoter")) {
-#   seurat <- FindTopFeatures(seurat, assay=i, min.cutoff = 2000)
-#   print(length(seurat[[i]]@var.features))
-# }
 
 #save the seurat object before training the model, it can be an good source of extra information in the downstream analysis
 saveRDS(seurat_mofa_human, "/media/david/Puzzles/IBP/human/second_model_human/seurat_human_second_model.RDS")
-seurat_mofa_human
-##Training the model woep woep!
+
+##Create mofa object
 mofa <- create_mofa(seurat_mofa_human, assays = c("RNA","ATAC_distal","ATAC_promoter"))
-##again: notice here that there's only 5000 features in the ATAC seq datacause i used FindVariableFeatures, and not FindTopFeatures
-##EDIT i've now treid the original function with a different min.cutoff, see models.txt
-mofa
 
 ##define the model options
 model_opts <- get_default_model_options(mofa)
 model_opts$num_factors <- 15
-mofa
+
 mofa <- prepare_mofa(mofa, model_options = model_opts)
+##Careful: this command actually trains the model
 mofa <- run_mofa(mofa, outfile = "/media/david/Puzzles/IBP/human/second_model_human/human_MOFA_second_model.hdf5", use_basilisk=TRUE)
+
+##save mofa object for downstream analysis
 saveRDS(mofa, "/media/david/Puzzles/IBP/human/second_model_human/mofa_object_human_second_model.RDS")
