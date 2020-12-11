@@ -290,3 +290,77 @@ genes %>% map(~ plot_factors(mofa_human,
                              legend = F
 )) %>% cowplot::plot_grid(plotlist=., nrow=1)
 
+##########################
+#Motif enrichment human ##
+##########################
+##we perform motif enrichment on distal ATAC, because it explains the most variance
+library(Seurat)
+library(MOFA2)
+library(Signac)
+
+motif.matrix <- t(as.matrix(seurat_human[["ATAC_distal"]]@motifs@data))
+rownames(motif.matrix)
+motif.enrichment.positive <- run_enrichment(mofa_human,
+                                            view = "ATAC_distal", 
+                                            factors = 1:2,
+                                            feature.sets = motif.matrix,
+                                            sign = "positive"
+)
+
+motif.enrichment.negative <- run_enrichment(mofa_human,
+                                            view = "ATAC_distal", 
+                                            factors = 1:2,
+                                            feature.sets = motif.matrix,
+                                            sign = "negative"
+)
+
+##Visualising
+###this one doesn't say much cause the motifs have bad interpretable names
+plot_enrichment(motif.enrichment.positive, factor = 1, max.pathways = 15)
+
+plot_enrichment(motif.enrichment.negative, factor = 1, max.pathways = 15)
+
+##this is pretty cool, it uses the Signac package
+sig.motifs.positive <- motif.enrichment.positive$pval.adj[,"Factor1"] %>%
+  sort %>% head(n=6) %>% names
+MotifPlot(seurat_human[["ATAC_distal"]], motifs = sig.motifs.positive)
+
+sig.motifs.negative <- motif.enrichment.negative$pval.adj[,"Factor1"] %>%
+  sort %>% head(n=6) %>% names
+MotifPlot(seurat_human[["ATAC_distal"]], motifs = sig.motifs.negative)
+
+############################
+## Motif enrichment mouse ##
+############################
+
+motif.matrix <- t(as.matrix(seurat_mouse[["ATAC_distal"]]@motifs@data))
+#####debug
+motif.enrichment.positive <- run_enrichment(mofa_mouse,
+                                            view = "ATAC_distal", 
+                                            factors = 1:2,
+                                            feature.sets = motif.matrix,
+                                            sign = "positive"
+)
+
+motif.enrichment.negative <- run_enrichment(mofa_mouse,
+                                            view = "ATAC_distal", 
+                                            factors = 1:2,
+                                            feature.sets = motif.matrix,
+                                            sign = "negative"
+)
+
+##Visualising
+###this one doesn't say much cause the motifs have bad interpretable names
+plot_enrichment(motif.enrichment.positive, factor = 1, max.pathways = 15)
+
+plot_enrichment(motif.enrichment.negative, factor = 1, max.pathways = 15)
+
+##this is pretty cool, it uses the Signac package
+sig.motifs.positive <- motif.enrichment.positive$pval.adj[,"Factor1"] %>%
+  sort %>% head(n=6) %>% names
+MotifPlot(seurat_mouse[["ATAC_distal"]], motifs = sig.motifs.positive)
+
+sig.motifs.negative <- motif.enrichment.negative$pval.adj[,"Factor1"] %>%
+  sort %>% head(n=6) %>% names
+MotifPlot(seurat_mouse[["ATAC_distal"]], motifs = sig.motifs.negative)
+
