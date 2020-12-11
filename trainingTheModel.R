@@ -1,5 +1,5 @@
 ##################################################################################################################
-## WATCH OUT: this script is reused for human/mouse seperately, so dont forget to replace all mentions of human ##
+## WATCH OUT: this script is reused for mouse/human seperately, so dont forget to replace all mentions of human ##
 ## with human or vice versa, otherwise things will go wrong.                                                    ##
 ##################################################################################################################
 
@@ -42,8 +42,8 @@ library(TFBSTools)
 library(BSgenome.Hsapiens.UCSC.hg38)
 library(MOFA2)
 
-#load data
-seurat_mofa_human <- readRDS("/media/david/Puzzles/IBP/human/cellranger/seurat_human.RDS")
+#load Seurat object coming out of cell annotation
+seurat_mofa_human <- readRDS("/media/david/Puzzles/IBP/final_model/Human_Annotated.Rds")
 seurat_mofa_human
 
 #downloading position specific weight matrix
@@ -120,6 +120,7 @@ for (i in c("distal","promoter")) {
   
 }
 
+
 #normalizing and scaling
 seurat_mofa_human <- NormalizeData(seurat_mofa_human, normalization.method = "LogNormalize", assay = "RNA")
 seurat_mofa_human <- ScaleData(seurat_mofa_human, do.center = TRUE, do.scale = FALSE)
@@ -146,7 +147,7 @@ for (i in c("ATAC_distal","ATAC_promoter")) {
 }
 
 #save the seurat object before training the model, it can be an good source of extra information in the downstream analysis
-saveRDS(seurat_mofa_human, "/media/david/Puzzles/IBP/human/second_model_human/seurat_human_second_model.RDS")
+saveRDS(seurat_mofa_human, "/media/david/Puzzles/IBP/final_model/human/seurat_human_final_model.RDS")
 
 ##Create mofa object
 mofa <- create_mofa(seurat_mofa_human, assays = c("RNA","ATAC_distal","ATAC_promoter"))
@@ -157,7 +158,7 @@ model_opts$num_factors <- 15
 
 mofa <- prepare_mofa(mofa, model_options = model_opts)
 ##Careful: this command actually trains the model
-mofa <- run_mofa(mofa, outfile = "/media/david/Puzzles/IBP/human/second_model_human/human_MOFA_second_model.hdf5", use_basilisk=TRUE)
+mofa <- run_mofa(mofa, outfile = "/media/david/Puzzles/IBP/final_model/human/human_MOFA_final_model.hdf5", use_basilisk=TRUE)
 
 ##save mofa object for downstream analysis
-saveRDS(mofa, "/media/david/Puzzles/IBP/human/second_model_human/mofa_object_human_second_model.RDS")
+saveRDS(mofa, "/media/david/Puzzles/IBP/final_model/human/mofa_object_human_final_model.RDS")
