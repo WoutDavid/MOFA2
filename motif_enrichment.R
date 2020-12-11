@@ -15,7 +15,7 @@ seurat_mouse <- readRDS("/media/david/Puzzles/IBP/mouse/second_model_mouse/seura
 mofa_mouse <- readRDS("/media/david/Puzzles/IBP/mouse/second_model_mouse/mofa_object_mouse_second_model.RDS")
 
 motif.matrix <- t(as.matrix(seurat_mouse[["ATAC_distal"]]@motifs@data))
-rownames(motif.matrix)
+#####debug
 motif.enrichment.positive <- run_enrichment(mofa_mouse,
                                             view = "ATAC_distal", 
                                             factors = 1:2,
