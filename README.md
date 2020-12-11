@@ -9,9 +9,9 @@ This github contains the code for the authors' integrated bioinformatics project
   - ***trainingTheModel.R***: This Rscript contains all code that adds metadata that we ourselves generated, and that was not just output of CellRanger. 
 After which, the data was normalized, scaled and variable features were found. This final Seurat object is then transformed to a MOFA object. The last few lines add the MOFA model specifications and actually train the model.
   - ***downstream_analysis.R***: Contains all code that creates the plots and allows us to infer our conclusions written in the paper.
-  - ***cell_cluster_annotation.R***: Contains all code that was used to annotate the cells with a celltype based on UMAP clustering and their marker genes.
+  - ***cell_cluster_annotation_organism.R***: Contains all code that was used to annotate the cells with a celltype based on UMAP clustering and their marker genes.
   - ***GSEA/motif_enrichtmen.R***: These scripts contain the code used to perform GSEA and motif enrichment on the two data modalities. When functional, this code was added to the downstream analysis, so these files can be disregarded.
- - **Markers**: This folder contains intermediate outputs created in the cell_cluster_annotation script.
+
  
  
  For more information, contact us at pleasedontcontactus@student.kuleuven.be
