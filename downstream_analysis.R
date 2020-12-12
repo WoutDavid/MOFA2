@@ -1,5 +1,4 @@
 #importing the seurat object and the MOFA model
-setwd("G:/IBPLast")
 library(Seurat)
 library(MOFA2)
 seurat <- readRDS("seurat_human_final_model.RDS")
