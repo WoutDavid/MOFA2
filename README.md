@@ -14,4 +14,3 @@ After which, the data was normalized, scaled and variable features were found. T
 
  
  
- For more information, contact us at pleasedontcontactus@student.kuleuven.be
